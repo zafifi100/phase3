@@ -1,21 +1,23 @@
 `default_nettype none
 
 // TODO LIST
-/* FIX cache port hookups
- * IMPLEMENT word enable logic
- * MOVE memory module from cpu to here
- * FIX what bits are checked from tagout for miss detected logic
- * IMPLEMENT memory contention
- * IMPLEMENT LRU 
- * IMPLEMENT what data goes into main mem module
- * DETERMINE outputs of module
+/* Data inputs to caches
+ * word enable logic
+ * what bits are checked from tagout for miss detected logic
+ * memory contention
+ * LRU 
+ * add decoders and one hots for enables
  */
 module CacheControl(
   input wire clk, rst,
   input wire [15:0] miss_address, curr_pc, // input to cache fsm
-  output wire [15:0] icache_out, dcache_out,
+  input wire [15:0] dcache_data, // input data to dcache
+  input wire [15:0] newdata, // new data to write to main mem and cache
+  output wire [15:0] icache_out, dcache_out, // output data from each cache
   output wire fsm_busy
 );
+  // cache data to be written
+  wire [5:0] idata_in, ddata_in;
 
   // cache enables
   wire icache_en, dcache_en;
@@ -40,19 +42,19 @@ module CacheControl(
 
   // instruction cache (TODO: Complete port hookups & check write enable doesnt need more)
   // Way 0 icache
-  MetaDataArray imetarray0(.clk(clk), .rst(rst), .DataIn(), .Write(write_tag_array), .BlockEnable(curr_pc[9:4]), .DataOut(TagOut0_icache));
-  DataArray idatarray0(.clk(clk), .rst(rst), .DataIn(), .Write(write_data_array), .BlockEnable(curr_pc[9:4]), .WordEnable(), .DataOut(DataOut0_icache));
+  MetaDataArray imetarray0(.clk(clk), .rst(rst), .DataIn(memory_address[15:10]), .Write(write_tag_array), .BlockEnable(curr_pc[9:4]), .DataOut(TagOut0_icache));
+  DataArray idatarray0(.clk(clk), .rst(rst), .DataIn(idata_in), .Write(write_data_array), .BlockEnable(curr_pc[9:4]), .WordEnable(memory_address[3:0]), .DataOut(DataOut0_icache));
   // Way 1 icache
   MetaDataArray imetarray1(.clk(clk), .rst(rst), .DataIn(), .Write(write_tag_array), .BlockEnable(curr_pc[9:4]), .DataOut(TagOut1_icache));
-  DataArray idatarray1(.clk(clk), .rst(rst), .DataIn(), .Write(write_data_array), .BlockEnable(curr_pc[9:4]), .WordEnable(), .DataOut(DataOut1_icache));
+  DataArray idatarray1(.clk(clk), .rst(rst), .DataIn(idata_in), .Write(write_data_array), .BlockEnable(curr_pc[9:4]), .WordEnable(memory_address[3:0]), .DataOut(DataOut1_icache));
 
   // data cache (TODO: Complete port hookups & check write enable doesnt need more)
   // Way 0 dcache
   MetaDataArray dmetarray0(.clk(clk), .rst(rst), .DataIn(), .Write(write_tag_array), .BlockEnable(curr_pc[9:4]), .DataOut(TagOut0_dcache));
-  DataArray ddatarray0(.clk(clk), .rst(rst), .DataIn(), .Write(write_data_array), .BlockEnable(curr_pc[9:4]), .WordEnable(), .DataOut(DataOut0_dcache));
+  DataArray ddatarray0(.clk(clk), .rst(rst), .DataIn(ddata_in), .Write(write_data_array), .BlockEnable(curr_pc[9:4]), .WordEnable(memory_address[3:0]), .DataOut(DataOut0_dcache));
   // Way 1 dcache
   MetaDataArray dmetarray1(.clk(clk), .rst(rst), .DataIn(), .Write(write_tag_array), .BlockEnable(curr_pc[9:4]), .DataOut(TagOut1_dcache));
-  DataArray ddatarray1(.clk(clk), .rst(rst), .DataIn(), .Write(write_data_array), .BlockEnable(curr_pc[9:4]), .WordEnable(), .DataOut(DataOut1_dcache));
+  DataArray ddatarray1(.clk(clk), .rst(rst), .DataIn(ddata_in), .Write(write_data_array), .BlockEnable(curr_pc[9:4]), .WordEnable(memory_address[3:0]), .DataOut(DataOut1_dcache));
 
 
 
@@ -68,11 +70,17 @@ module CacheControl(
   assign dcache_miss_detected = (curr_pc[15:10] === TagOut0_dcache[5:0]) || (curr_pc[15:10] === TagOut1_dcache[5:0]) ||
                                 (curr_pc[15:10] === DataOut0_dcache[5:0]) || (curr_pc[15:10] === DataOut1_dcache[5:0]);
 
+  
+  // input data to be written to dcache
+  assign ddata_in = dcache_data;
+
+  // input data to be written to icache
+  assign idata_in = MainMemOut;
+
  
   // Memory module (TODO: WHAT IS DATA INPUT)
   memory4c mainmem(.data_out(MainMemOut), .data_in(), .addr(memory_address), .enable(icache_miss_detected | dcache_miss_detected), 
                    .wr(write_data_array), .clk(clk), .rst(rst), .data_valid(memory_data_valid));
 
 endmodule
-
 
