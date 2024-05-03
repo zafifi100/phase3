@@ -18,7 +18,7 @@ module cache (
   wire [7:0] metain0, metain1;
   
   //Keeps track of the hit and miss stuff
-  wire way0hit, way1hit, miss;
+  wire way0hit, way1hit;
 
   //Cache output
   wire [15:0] data_out0, data_out1;
@@ -86,7 +86,7 @@ endmodule
 
 module decoder6_64 (
   input [5:0] decode_in,
-  output [63:0] decode_out,
+  output [63:0] decode_out
 );
 
   wire [63:0] b0, b1, b2, b3, b4, b5, b6;
