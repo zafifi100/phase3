@@ -1,6 +1,7 @@
 module cache (
   input clk, rst, cacheRead, cacheWrite,
   input [15:0] address, data_in,
+  input metawrite, datawrite,
   output miss,
   output [15:0] data_out
 );
@@ -54,12 +55,13 @@ module cache (
 
   
 
+
   // Way 0 icache
-  MetaDataArray metarray0(.clk(clk), .rst(rst), .DataIn(metain0), .Write(cacheRead | cacheWrite), .BlockEnable(blockenable), .DataOut(metaout0));
+  MetaDataArray metarray0(.clk(clk), .rst(rst), .DataIn(metain0), .Write(way0hit), .BlockEnable(blockenable), .DataOut(metaout0));
   DataArray datarray0(.clk(clk), .rst(rst), .DataIn(data_in), .Write(cacheWrite), .BlockEnable(blockenable), .WordEnable(wordenable), .DataOut(data_out0));
 
   // Way 1 icache
-  MetaDataArray metarray1(.clk(clk), .rst(rst), .DataIn(metain1), .Write(cacheRead | cacheWrite), .BlockEnable(blockenable), .DataOut(metaout1));
+  MetaDataArray metarray1(.clk(clk), .rst(rst), .DataIn(metain1), .Write(way1hit), .BlockEnable(blockenable), .DataOut(metaout1));
   DataArray datarray1(.clk(clk), .rst(rst), .DataIn(data_in), .Write(cacheWrite), .BlockEnable(blockenable), .WordEnable(wordenable), .DataOut(data_out1));
 
 
